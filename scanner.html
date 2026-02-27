@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Barcode Scanner</title>
+
+<!-- ZXing Library CDN -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: white;
+    text-align: center;
+}
+#video {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    border: 3px solid #00ffcc;
+    border-radius: 10px;
+}
+.result-box {
+    margin-top: 15px;
+    padding: 15px;
+    background: #222;
+    border-radius: 10px;
+}
+button {
+    padding: 12px 20px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #00ffcc;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<h2>📷 Barcode Scanner</h2>
+
+<video id="video"></video>
+
+<div class="result-box">
+    <h3>স্ক্যান ফলাফল:</h3>
+    <p id="result">কিছু স্ক্যান করা হয়নি</p>
+</div>
+
+<button onclick="startScanner()">স্ক্যান শুরু করুন</button>
+<button onclick="stopScanner()">স্ক্যান বন্ধ করুন</button>
+
+<script>
+let codeReader = null;
+
+async function startScanner() {
+    const videoElement = document.getElementById('video');
+    const resultElement = document.getElementById('result');
+
+    codeReader = new ZXing.BrowserMultiFormatReader();
+
+    try {
+        const devices = await codeReader.listVideoInputDevices();
+        const backCamera = devices.find(device =>
+            device.label.toLowerCase().includes('back')
+        ) || devices[0];
+
+        await codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+            if (result) {
+                resultElement.textContent = result.text;
+                navigator.vibrate(200); // Vibrate on scan
+            }
+        });
+    } catch (error) {
+        alert("ক্যামেরা চালু করা যাচ্ছে না: " + error);
+    }
+}
+
+function stopScanner() {
+    if (codeReader) {
+        codeReader.reset();
+        document.getElementById('result').textContent = "স্ক্যান বন্ধ করা হয়েছে";
+    }
+}
+</script>
+
+</body>
+</html>
