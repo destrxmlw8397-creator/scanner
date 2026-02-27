@@ -3,88 +3,116 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mobile Barcode Scanner</title>
+<title>Pro Barcode Scanner</title>
 
-<!-- ZXing Library CDN -->
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #111;
-    color: white;
-    text-align: center;
+body{
+    margin:0;
+    font-family:Arial;
+    background:#000;
+    color:white;
+    text-align:center;
 }
-#video {
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    border: 3px solid #00ffcc;
-    border-radius: 10px;
+video{
+    width:100%;
+    height:auto;
+    max-height:70vh;
+    border:3px solid #00ffcc;
+    border-radius:12px;
 }
-.result-box {
-    margin-top: 15px;
-    padding: 15px;
-    background: #222;
-    border-radius: 10px;
+.controls{
+    margin-top:15px;
 }
-button {
-    padding: 12px 20px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #00ffcc;
-    font-weight: bold;
+button{
+    padding:12px 20px;
+    margin:8px;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    background:#00ffcc;
+}
+.result{
+    margin-top:15px;
+    font-size:18px;
+    background:#111;
+    padding:10px;
+    border-radius:10px;
 }
 </style>
 </head>
 <body>
 
-<h2>📷 Barcode Scanner</h2>
+<h2>📷 Pro Barcode Scanner</h2>
 
 <video id="video"></video>
 
-<div class="result-box">
-    <h3>স্ক্যান ফলাফল:</h3>
-    <p id="result">কিছু স্ক্যান করা হয়নি</p>
+<div class="result">
+    <div>স্ক্যান ফলাফল:</div>
+    <strong id="result">Waiting...</strong>
 </div>
 
-<button onclick="startScanner()">স্ক্যান শুরু করুন</button>
-<button onclick="stopScanner()">স্ক্যান বন্ধ করুন</button>
+<div class="controls">
+    <button onclick="toggleFlash()">🔦 Flash</button>
+    <button onclick="stopScanner()">⛔ Stop</button>
+</div>
+
+<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 
 <script>
-let codeReader = null;
+let codeReader = new ZXing.BrowserMultiFormatReader();
+let selectedDeviceId;
+let currentStream;
+let flashOn = false;
 
 async function startScanner() {
-    const videoElement = document.getElementById('video');
-    const resultElement = document.getElementById('result');
-
-    codeReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('video');
+    const resultBox = document.getElementById('result');
 
     try {
         const devices = await codeReader.listVideoInputDevices();
-        const backCamera = devices.find(device =>
-            device.label.toLowerCase().includes('back')
-        ) || devices[0];
+        const backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
+        selectedDeviceId = backCam.deviceId;
 
-        await codeReader.decodeFromVideoDevice(backCamera.deviceId, videoElement, (result, err) => {
+        codeReader.decodeFromVideoDevice(selectedDeviceId, video, (result, err) => {
             if (result) {
-                resultElement.textContent = result.text;
-                navigator.vibrate(200); // Vibrate on scan
+                resultBox.textContent = result.text;
+
+                document.getElementById("beep").play();
+                navigator.vibrate(200);
             }
         });
-    } catch (error) {
-        alert("ক্যামেরা চালু করা যাচ্ছে না: " + error);
+
+        currentStream = video.srcObject;
+
+    } catch (err) {
+        alert("Camera Error: " + err);
     }
 }
 
-function stopScanner() {
-    if (codeReader) {
-        codeReader.reset();
-        document.getElementById('result').textContent = "স্ক্যান বন্ধ করা হয়েছে";
-    }
+function stopScanner(){
+    codeReader.reset();
 }
+
+async function toggleFlash(){
+    const track = currentStream?.getVideoTracks()[0];
+    if (!track) return;
+
+    const capabilities = track.getCapabilities();
+    if (!capabilities.torch) {
+        alert("Flashlight supported না");
+        return;
+    }
+
+    flashOn = !flashOn;
+
+    await track.applyConstraints({
+        advanced: [{ torch: flashOn }]
+    });
+}
+
+window.onload = startScanner;
 </script>
 
 </body>
