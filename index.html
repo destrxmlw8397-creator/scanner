@@ -1,138 +1,43 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Focus Barcode Scanner</title>
-
-<script src="https://unpkg.com/@zxing/library@latest"></script>
-
-<style>
-body{
-    margin:0;
-    background:#000;
-    overflow:hidden;
-    font-family:Arial;
-}
-
-#container{
-    position:relative;
-    width:100vw;
-    height:100vh;
-}
-
-video{
-    position:absolute;
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-
-/* Dark overlay */
-.overlay{
-    position:absolute;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-}
-
-/* Focus box */
-.focus-box{
-    position:absolute;
-    top:50%;
-    left:50%;
-    width:280px;
-    height:180px;
-    transform:translate(-50%,-50%);
-    border:3px solid #00ffcc;
-    border-radius:15px;
-    box-shadow:0 0 15px #00ffcc;
-}
-
-/* Transparent hole effect */
-.mask{
-    position:absolute;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-    background:
-        linear-gradient(#000000aa,#000000aa) top/100% calc(50% - 90px) no-repeat,
-        linear-gradient(#000000aa,#000000aa) bottom/100% calc(50% - 90px) no-repeat,
-        linear-gradient(#000000aa,#000000aa) left/ calc(50% - 140px) 180px no-repeat,
-        linear-gradient(#000000aa,#000000aa) right/ calc(50% - 140px) 180px no-repeat;
-}
-
-/* Scan line animation */
-.scan-line{
-    position:absolute;
-    width:100%;
-    height:2px;
-    background:#00ffcc;
-    top:0;
-    animation:scan 2s infinite;
-}
-
-@keyframes scan{
-    0%{top:0;}
-    100%{top:178px;}
-}
-
-.result{
-    position:absolute;
-    bottom:30px;
-    width:100%;
-    text-align:center;
-    color:white;
-    font-size:18px;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>সহজ বারকোড স্ক্যানার</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px; }
+        #reader { width: 100%; max-width: 500px; margin: auto; background: white; padding: 10px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        #result { margin-top: 20px; font-size: 1.2rem; color: #333; word-wrap: break-word; }
+        h2 { color: #007bff; }
+    </style>
 </head>
 <body>
 
-<div id="container">
-    <video id="video"></video>
-    <div class="overlay"></div>
+    <h2>আমার বারকোড স্ক্যানার</h2>
+    <div id="reader"></div>
+    <div id="result">স্ক্যান করার জন্য ক্যামেরা পারমিশন দিন...</div>
 
-    <div class="focus-box">
-        <div class="scan-line"></div>
-    </div>
+    <script>
+        function onScanSuccess(decodedText, decodedResult) {
+            // স্ক্যান সফল হলে এখানে রেজাল্ট দেখাবে
+            document.getElementById('result').innerHTML = `
+                <strong style="color: green;">স্ক্যান সফল!</strong><br>
+                ফলাফল: <a href="${decodedText}" target="_blank">${decodedText}</a>
+            `;
+            // চাইলে স্ক্যান হওয়ার পর ক্যামেরা বন্ধ করে দিতে পারেন:
+            // html5QrcodeScanner.clear();
+        }
 
-    <div class="mask"></div>
+        function onScanFailure(error) {
+            // স্ক্যান চলাকালীন প্রতি ফ্রেমের এরর এখানে আসবে (এটি ইগনোর করা ভালো)
+        }
 
-    <div class="result">
-        <div>স্ক্যান ফলাফল:</div>
-        <strong id="result">Waiting...</strong>
-    </div>
-</div>
-
-<audio id="beep" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-
-<script>
-let codeReader = new ZXing.BrowserMultiFormatReader();
-
-async function startScanner(){
-    const video = document.getElementById('video');
-    const resultBox = document.getElementById('result');
-
-    try{
-        const devices = await codeReader.listVideoInputDevices();
-        const backCam = devices.find(d => d.label.toLowerCase().includes('back')) || devices[0];
-
-        codeReader.decodeFromVideoDevice(backCam.deviceId, video, (result, err) => {
-            if(result){
-                resultBox.textContent = result.text;
-                document.getElementById("beep").play();
-                navigator.vibrate(200);
-            }
-        });
-
-    }catch(err){
-        alert("Camera error: " + err);
-    }
-}
-
-window.onload = startScanner;
-</script>
-
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: {width: 250, height: 150} }
+        );
+        
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    </script>
 </body>
 </html>
